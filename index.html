@@ -451,16 +451,44 @@
       context.drawImage(img, x, y, w, h);
     }
 
-    downloadBtn.addEventListener('click', () => {
-      if (!generatedBlob) return;
+downloadBtn.addEventListener('click', async () => {
+  if (!userImgCache) return;
+
+  downloadBtn.disabled = true;
+  const originalText = downloadBtn.textContent;
+  downloadBtn.textContent = 'Preparando download… ⏳';
+
+  try {
+    await ensureOverlay();
+
+    // ✅ Renderiza em alta resolução AGORA (1080px)
+    renderComposition(canvas, 'final');
+
+    canvas.toBlob(blob => {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = originalText;
+
+      if (!blob) {
+        alert('Não foi possível gerar a imagem. Tente novamente.');
+        return;
+      }
+
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(generatedBlob);
+      a.href = URL.createObjectURL(blob);
       a.download = currentFormat === 'feed'
         ? 'parabens-ubatuba-feed.jpg'
         : 'parabens-ubatuba-stories.jpg';
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    });
+    }, 'image/jpeg', 0.92);
+
+  } catch (err) {
+    console.error(err);
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = originalText;
+    alert('Não foi possível gerar a imagem final. Tente novamente.');
+  }
+});
   </script>
 </body>
 </html>
